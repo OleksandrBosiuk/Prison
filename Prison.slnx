@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Prison.Core/Prison.Core.csproj" />
+  <Project Path="Prison.WPFApp/Prison.WpfApp.csproj" />
+</Solution>
