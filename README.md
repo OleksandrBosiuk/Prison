@@ -1,4 +1,4 @@
-# Prison Block 13 — WPF OOP Application
+# Prison Block  13
 
 ## Theme & Goal
 The application simulates a prison environment ("Prison Block 13") where different inmate types coexist and react polymorphically to actions. The solution is partitioned into a core domain library (`Prison.Core`) and a user interface (`Prison.WpfApp`), showcasing inheritance, interfaces, polymorphism, state validation, and UI data binding.
@@ -40,11 +40,24 @@ The application simulates a prison environment ("Prison Block 13") where differe
 5. **Item Removal:** Select an inmate and click "Remove Selected" — instance is safely removed from the collection and UI roster.
 
 ## Git Collaboration
-* **Collaborator:** [Peer Name]
-* **Issue:** [Link to Issue]
-* **Pull Request:** [Link to Pull Request]
+* **Collaborator:** soyawo
+* **Issue:** Add Cook subclass inheriting from Prisoner and implementing IWork
+* **Pull Request:** Pending review (will be linked upon merge)
 
-## AI Usage Disclosure
-* **Tool:** Gemini
-* **Purpose:** Refactoring suggestions, structuring `.resx` resource architecture, and terminal UI design tuning.
-* **Verification:** All classes, inheritance hierarchies, interfaces, data-binding expressions, and error handling were manually verified, tested, and debugged.
+## AI usage
+AI tool used:
+Gemini
+
+Purpose:
+* helped brainstorm inmate character concepts and unique actions;
+* helped troubleshoot build and runtime errors during development;
+* suggested ideas to make the WPF UI look more prison-themed;
+* helped prepare README documentation.
+
+My own checks and changes:
+* I created the Visual Studio solution and both projects.
+* I linked the WPF project to the Core library.
+* I wrote and tested the classes and interfaces.
+* I wrote the button click methods and event log logic.
+* I tested adding, removing, and running actions for all prisoners.
+* I checked input validation to prevent crashes.
