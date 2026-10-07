@@ -1,8 +1,6 @@
 ﻿using Prison.Core;
 using System;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -15,6 +13,7 @@ namespace Prison.WpfApp
         public MainWindow()
         {
             InitializeComponent();
+
             _prisoners = new ObservableCollection<Prisoner>();
             PrisonersList.ItemsSource = _prisoners;
         }
@@ -34,17 +33,27 @@ namespace Prison.WpfApp
                     newPrisoner = new Philosopher(name);
                 else if (type == "Artist")
                     newPrisoner = new Artist(name);
+                else if (type == "Cook")
+                    newPrisoner = new Cook(name);
 
                 if (newPrisoner != null)
                 {
                     _prisoners.Add(newPrisoner);
-                    Log(string.Format(Prison.Core.Resources.LogArrival, name));
+
+                    Log(string.Format(
+                        Prison.Core.Resources.LogArrival,
+                        name));
+
                     NameTextBox.Clear();
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, Prison.Core.Resources.ErrorTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(
+                    ex.Message,
+                    Prison.Core.Resources.ErrorTitle,
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
             }
         }
 
@@ -53,17 +62,24 @@ namespace Prison.WpfApp
             if (PrisonersList.SelectedItem is Prisoner p)
             {
                 _prisoners.Remove(p);
-                Log(string.Format(Prison.Core.Resources.LogRemoved, p.Name));
+
+                Log(string.Format(
+                    Prison.Core.Resources.LogRemoved,
+                    p.Name));
             }
         }
 
-        private void PrisonersList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void PrisonersList_SelectionChanged(
+            object sender,
+            SelectionChangedEventArgs e)
         {
             try
             {
                 if (PrisonersList.SelectedItem is Prisoner p)
                 {
-                    SelectedInfoText.Text = $"Selected: {p.Name} ({p.GetType().Name})";
+                    SelectedInfoText.Text =
+                        $"Selected: {p.Name} ({p.GetType().Name})";
+
                     EnergyBar.DataContext = p;
                 }
                 else
@@ -75,10 +91,11 @@ namespace Prison.WpfApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"An error occurred: {ex.Message}\n\nLocation: {ex.StackTrace}",
-                                "Selection Error",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
+                MessageBox.Show(
+                    $"An error occurred: {ex.Message}\n\nLocation: {ex.StackTrace}",
+                    "Selection Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
@@ -87,6 +104,14 @@ namespace Prison.WpfApp
             if (PrisonersList.SelectedItem is Prisoner p)
             {
                 Log(p.NormalAction());
+            }
+        }
+
+        private void RestAction_Click(object sender, RoutedEventArgs e)
+        {
+            if (PrisonersList.SelectedItem is Prisoner p)
+            {
+                Log(p.Rest());
             }
         }
 
@@ -108,7 +133,9 @@ namespace Prison.WpfApp
                 }
                 else
                 {
-                    Log(string.Format(Prison.Core.Resources.LogNoWork, p.Name));
+                    Log(string.Format(
+                        Prison.Core.Resources.LogNoWork,
+                        p.Name));
                 }
             }
         }
@@ -123,7 +150,9 @@ namespace Prison.WpfApp
                 }
                 else
                 {
-                    Log(string.Format(Prison.Core.Resources.LogNoStudy, p.Name));
+                    Log(string.Format(
+                        Prison.Core.Resources.LogNoStudy,
+                        p.Name));
                 }
             }
         }
@@ -131,14 +160,9 @@ namespace Prison.WpfApp
         private void Log(string message)
         {
             LogList.Items.Add(message);
-            LogList.ScrollIntoView(LogList.Items[LogList.Items.Count - 1]);
-        }
-        private void RestAction_Click(object sender, RoutedEventArgs e)
-        {
-            if (PrisonersList.SelectedItem is Prisoner p)
-            {
-                Log(p.Rest());
-            }
+
+            LogList.ScrollIntoView(
+                LogList.Items[LogList.Items.Count - 1]);
         }
     }
 }
