@@ -54,7 +54,6 @@
                          Padding="4"
                          FontFamily="Consolas"/>
 
-                <!-- Стандартная кнопка -->
                 <Button Content="Add Prisoner"
                         Click="AddButton_Click"
                         Padding="15,5"
@@ -121,7 +120,6 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Досье и энергия -->
                 <Border Grid.Row="0"
                         Background="#F8F9F9"
                         BorderBrush="#5D6D7E"
