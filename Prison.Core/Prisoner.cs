@@ -1,51 +1,72 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Prison.Core
 {
     public abstract class Prisoner : INotifyPropertyChanged
     {
-        public string Name { get; }
-
         private int _energy;
+        public string Name { get; set; }
+
         public int Energy
         {
-            get { return _energy; }
-            protected set
+            get => _energy;
+            set
             {
-                _energy = Math.Max(0, Math.Min(100, value));
-                OnPropertyChanged(nameof(Energy));
+                if (_energy != value)
+                {
+                    _energy = Math.Clamp(value, 0, 100);
+                    OnPropertyChanged();
+                }
             }
         }
 
-        public Prisoner(string name)
+        public string TypeName => GetType().Name;
+
+        public event Action<string>? ActionLogged;
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected Prisoner(string name, int initialEnergy = 100)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                throw new ArgumentException(Resources.ErrorEmptyName);
-            }
             Name = name;
-            Energy = 100;
+            Energy = initialEnergy;
         }
 
         public virtual string NormalAction()
         {
-            Energy -= 5;
-            return string.Format(Resources.NormalAction, Name, Energy);
+            return $"{Name} is staying in the cell and following the daily routine.";
         }
 
         public virtual string Rest()
         {
-            Energy += 40;
-            return string.Format(Resources.RestAction, Name, Energy);
+            Energy = Math.Min(100, Energy + 20);
+            return $"{Name} rested on the bunk. Energy is now {Energy}%.";
         }
 
         public abstract string CrazyAction();
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
+        public virtual void OnNeighborJoined(Prisoner newcomer)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            Log($"{Name} ({TypeName}) greets newcomer {newcomer.Name}.");
+        }
+
+        public virtual void OnNeighborLeft(Prisoner leaving)
+        {
+            Log($"{Name} ({TypeName}) says goodbye to {leaving.Name}.");
+        }
+
+        public virtual void OnNeighborWentCrazy(Prisoner instigator)
+        {
+            Energy -= 5;
+            Log($"{Name} gets stressed by {instigator.Name}'s crazy action! Energy dropped to {Energy}%.");
+        }
+
+        protected void Log(string message) => ActionLogged?.Invoke(message);
+
+        protected void OnPropertyChanged([CallerMemberName] string? propName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propName));
         }
     }
 }
