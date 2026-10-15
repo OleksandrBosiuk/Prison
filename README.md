@@ -61,3 +61,29 @@ My own checks and changes:
 * I wrote the button click methods and event log logic.
 * I tested adding, removing, and running actions for all prisoners.
 * I checked input validation to prevent crashes.
+
+## Vol.2 – MVVM Architecture, Generics & LINQ
+
+### Overview
+In this version, the application was refactored to follow the **MVVM (Model-View-ViewModel)** pattern, introducing generic repositories, decoupled event-driven reactions, and LINQ data queries.
+
+### Key Architectural Components
+
+- **MVVM Implementation**:
+  - `MainViewModel`: Manages application state, observable collections, and user interactions.
+  - `RelayCommand`: Reusable `ICommand` implementation handling UI actions and `CanExecute` conditions (e.g., restricting actions based on `IWork` and `IStudy` interfaces).
+  - Minimal Code-Behind: `MainWindow.xaml.cs` only initializes components and assigns the `DataContext`.
+
+- **Generic Repositories (`IRepository<T>` & `Repository<T>`)**:
+  - Strongly-typed isolated repositories for each character class (`Repository<Rookie>`, `Repository<Philosopher>`, `Repository<Artist>`, `Repository<Cook>`, `Repository<Lawyer>`, `Repository<Athlete>`, `Repository<Mechanic>`).
+  - Enforces generic constraints (`where T : Prisoner`).
+  - Exposes standard CRUD methods: `Add`, `Remove`, `GetAll`, `Find`, and `TriggerCrazyAction`.
+
+- **Custom Events & Reaction Mechanism**:
+  - Uses `InmateEventArgs` carrying the actor reference and status messages.
+  - Lifecycle events: `ItemAdded`, `ItemRemoved`, and `ItemWentCrazy`.
+  - Inmates subscribe to repository events on entry and unsubscribe on removal to prevent memory leaks.
+  - Isolated reactions: when a prisoner triggers a crazy action, only neighboring inmates within the same repository lose 5% energy. The instigator is excluded, and inmates in other repositories remain unaffected.
+
+- **LINQ Operations**:
+  - **Filtering (`Where`)**: Instant search
