@@ -1,4 +1,4 @@
-﻿using Prison.Core;
+using Prison.Core;
 using Prison.WPFApp;
 using System;
 using System.Collections.Generic;
@@ -15,12 +15,18 @@ namespace Prison.WpfApp
         public Repository<Rookie> RookieRepo { get; } = new();
         public Repository<Philosopher> PhilosopherRepo { get; } = new();
         public Repository<Artist> ArtistRepo { get; } = new();
+        public Repository<Lawyer> LawyerRepo { get; } = new();
+        public Repository<Athlete> AthleteRepo { get; } = new();
+        public Repository<Mechanic> MechanicRepo { get; } = new();
 
         public ObservableCollection<string> AvailableTypes { get; } = new()
         {
             "Rookie",
             "Philosopher",
-            "Artist"
+            "Artist",
+            "Lawyer",
+            "Athlete",
+            "Mechanic"
         };
 
         private string _selectedType = "Rookie";
@@ -90,34 +96,67 @@ namespace Prison.WpfApp
             BindRepoEvents(RookieRepo);
             BindRepoEvents(PhilosopherRepo);
             BindRepoEvents(ArtistRepo);
+            BindRepoEvents(LawyerRepo);
+            BindRepoEvents(AthleteRepo);
+            BindRepoEvents(MechanicRepo);
 
-            AddCommand = new RelayCommand(_ => AddPrisoner(), _ => !string.IsNullOrWhiteSpace(NewInmateName));
-            RemoveCommand = new RelayCommand(_ => RemovePrisoner(), _ => SelectedPrisoner != null);
+            AddCommand = new RelayCommand(
+                _ => AddPrisoner(),
+                _ => !string.IsNullOrWhiteSpace(NewInmateName));
 
-            NormalActionCommand = new RelayCommand(_ => PerformNormal(), _ => SelectedPrisoner != null);
-            RestCommand = new RelayCommand(_ => PerformRest(), _ => SelectedPrisoner != null);
-            WorkCommand = new RelayCommand(_ => PerformWork(), _ => SelectedPrisoner is IWork);
-            StudyCommand = new RelayCommand(_ => PerformStudy(), _ => SelectedPrisoner is IStudy);
-            CrazyActionCommand = new RelayCommand(_ => PerformCrazy(), _ => SelectedPrisoner != null);
+            RemoveCommand = new RelayCommand(
+                _ => RemovePrisoner(),
+                _ => SelectedPrisoner != null);
 
-            SortByNameCommand = new RelayCommand(_ => SortList(byEnergy: false));
-            SortByEnergyCommand = new RelayCommand(_ => SortList(byEnergy: true));
+            NormalActionCommand = new RelayCommand(
+                _ => PerformNormal(),
+                _ => SelectedPrisoner != null);
+
+            RestCommand = new RelayCommand(
+                _ => PerformRest(),
+                _ => SelectedPrisoner != null);
+
+            WorkCommand = new RelayCommand(
+                _ => PerformWork(),
+                _ => SelectedPrisoner is IWork);
+
+            StudyCommand = new RelayCommand(
+                _ => PerformStudy(),
+                _ => SelectedPrisoner is IStudy);
+
+            CrazyActionCommand = new RelayCommand(
+                _ => PerformCrazy(),
+                _ => SelectedPrisoner != null);
+
+            SortByNameCommand = new RelayCommand(
+                _ => SortList(byEnergy: false));
+
+            SortByEnergyCommand = new RelayCommand(
+                _ => SortList(byEnergy: true));
 
             ApplyLinq();
         }
 
         private void BindRepoEvents<T>(Repository<T> repo) where T : Prisoner
         {
-            repo.ItemAdded += (s, e) => AddLog($"[Added] {e.Message}");
-            repo.ItemRemoved += (s, e) => AddLog($"[Removed] {e.Message}");
-            repo.ItemWentCrazy += (s, e) => AddLog($"[Crazy] {e.Actor.Name}: {e.Message}");
+            repo.ItemAdded += (s, e) =>
+                AddLog($"[Added] {e.Message}");
+
+            repo.ItemRemoved += (s, e) =>
+                AddLog($"[Removed] {e.Message}");
+
+            repo.ItemWentCrazy += (s, e) =>
+                AddLog($"[Crazy] {e.Actor.Name}: {e.Message}");
         }
 
         private IEnumerable<Prisoner> GetAllInmates()
         {
             return RookieRepo.GetAll()
                 .Concat<Prisoner>(PhilosopherRepo.GetAll())
-                .Concat<Prisoner>(ArtistRepo.GetAll());
+                .Concat<Prisoner>(ArtistRepo.GetAll())
+                .Concat<Prisoner>(LawyerRepo.GetAll())
+                .Concat<Prisoner>(AthleteRepo.GetAll())
+                .Concat<Prisoner>(MechanicRepo.GetAll());
         }
 
         private void AddPrisoner()
@@ -129,11 +168,31 @@ namespace Prison.WpfApp
                     p.ActionLogged += msg => AddLog(msg);
                     PhilosopherRepo.Add(p);
                     break;
+
                 case "Artist":
                     var a = new Artist(NewInmateName);
                     a.ActionLogged += msg => AddLog(msg);
                     ArtistRepo.Add(a);
                     break;
+
+                case "Lawyer":
+                    var l = new Lawyer(NewInmateName);
+                    l.ActionLogged += msg => AddLog(msg);
+                    LawyerRepo.Add(l);
+                    break;
+
+                case "Athlete":
+                    var ath = new Athlete(NewInmateName);
+                    ath.ActionLogged += msg => AddLog(msg);
+                    AthleteRepo.Add(ath);
+                    break;
+
+                case "Mechanic":
+                    var m = new Mechanic(NewInmateName);
+                    m.ActionLogged += msg => AddLog(msg);
+                    MechanicRepo.Add(m);
+                    break;
+
                 default:
                     var r = new Rookie(NewInmateName);
                     r.ActionLogged += msg => AddLog(msg);
@@ -149,9 +208,18 @@ namespace Prison.WpfApp
         {
             if (SelectedPrisoner == null) return;
 
-            if (SelectedPrisoner is Rookie r) RookieRepo.Remove(r);
-            else if (SelectedPrisoner is Philosopher ph) PhilosopherRepo.Remove(ph);
-            else if (SelectedPrisoner is Artist ar) ArtistRepo.Remove(ar);
+            if (SelectedPrisoner is Rookie r)
+                RookieRepo.Remove(r);
+            else if (SelectedPrisoner is Philosopher ph)
+                PhilosopherRepo.Remove(ph);
+            else if (SelectedPrisoner is Artist ar)
+                ArtistRepo.Remove(ar);
+            else if (SelectedPrisoner is Lawyer l)
+                LawyerRepo.Remove(l);
+            else if (SelectedPrisoner is Athlete ath)
+                AthleteRepo.Remove(ath);
+            else if (SelectedPrisoner is Mechanic m)
+                MechanicRepo.Remove(m);
 
             SelectedPrisoner = null;
             ApplyLinq();
@@ -160,6 +228,7 @@ namespace Prison.WpfApp
         private void PerformNormal()
         {
             if (SelectedPrisoner == null) return;
+
             AddLog($"[Action] {SelectedPrisoner.NormalAction()}");
             ApplyLinq();
         }
@@ -167,6 +236,7 @@ namespace Prison.WpfApp
         private void PerformRest()
         {
             if (SelectedPrisoner == null) return;
+
             AddLog($"[Rest] {SelectedPrisoner.Rest()}");
             ApplyLinq();
         }
@@ -193,9 +263,18 @@ namespace Prison.WpfApp
         {
             if (SelectedPrisoner == null) return;
 
-            if (SelectedPrisoner is Rookie r) RookieRepo.TriggerCrazyAction(r);
-            else if (SelectedPrisoner is Philosopher ph) PhilosopherRepo.TriggerCrazyAction(ph);
-            else if (SelectedPrisoner is Artist ar) ArtistRepo.TriggerCrazyAction(ar);
+            if (SelectedPrisoner is Rookie r)
+                RookieRepo.TriggerCrazyAction(r);
+            else if (SelectedPrisoner is Philosopher ph)
+                PhilosopherRepo.TriggerCrazyAction(ph);
+            else if (SelectedPrisoner is Artist ar)
+                ArtistRepo.TriggerCrazyAction(ar);
+            else if (SelectedPrisoner is Lawyer l)
+                LawyerRepo.TriggerCrazyAction(l);
+            else if (SelectedPrisoner is Athlete ath)
+                AthleteRepo.TriggerCrazyAction(ath);
+            else if (SelectedPrisoner is Mechanic m)
+                MechanicRepo.TriggerCrazyAction(m);
 
             ApplyLinq();
         }
@@ -207,22 +286,31 @@ namespace Prison.WpfApp
 
             var filtered = string.IsNullOrWhiteSpace(SearchFilter)
                 ? all
-                : all.Where(x => x.Name.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)
-                              || x.TypeName.Contains(SearchFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+                : all.Where(x =>
+                    x.Name.Contains(
+                        SearchFilter,
+                        StringComparison.OrdinalIgnoreCase)
+                    || x.TypeName.Contains(
+                        SearchFilter,
+                        StringComparison.OrdinalIgnoreCase))
+                .ToList();
 
             DisplayedInmates.Clear();
+
             foreach (var item in filtered)
             {
                 DisplayedInmates.Add(item);
             }
 
-            if (currentSelected != null && DisplayedInmates.Contains(currentSelected))
+            if (currentSelected != null
+                && DisplayedInmates.Contains(currentSelected))
             {
                 SelectedPrisoner = currentSelected;
             }
 
             var groups = all.GroupBy(x => x.TypeName)
-                            .Select(g => $"{g.Key}: {g.Count()} (Avg: {(g.Any() ? (int)g.Average(i => i.Energy) : 0)}%)");
+                .Select(g =>
+                    $"{g.Key}: {g.Count()} (Avg: {(g.Any() ? (int)g.Average(i => i.Energy) : 0)}%)");
 
             GroupSummaryText = all.Any()
                 ? "Summary: " + string.Join(" | ", groups)
@@ -236,7 +324,11 @@ namespace Prison.WpfApp
                 : DisplayedInmates.OrderBy(x => x.Name).ToList();
 
             DisplayedInmates.Clear();
-            foreach (var item in list) DisplayedInmates.Add(item);
+
+            foreach (var item in list)
+            {
+                DisplayedInmates.Add(item);
+            }
         }
 
         private void AddLog(string log)
@@ -245,9 +337,13 @@ namespace Prison.WpfApp
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? name = null)
+
+        protected void OnPropertyChanged(
+            [CallerMemberName] string? name = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            PropertyChanged?.Invoke(
+                this,
+                new PropertyChangedEventArgs(name));
         }
     }
 }
