@@ -7,6 +7,8 @@ namespace Prison.Core
     public abstract class Prisoner : INotifyPropertyChanged
     {
         private int _energy;
+
+        public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; }
 
         public int Energy
@@ -31,6 +33,13 @@ namespace Prison.Core
         {
             Name = name;
             Energy = initialEnergy;
+        }
+
+        public void RestoreState(Guid id, int energy)
+        {
+            Id = id;
+            Energy = Math.Clamp(energy, 0, 100);
+            OnPropertyChanged(nameof(Energy));
         }
 
         public virtual string NormalAction()

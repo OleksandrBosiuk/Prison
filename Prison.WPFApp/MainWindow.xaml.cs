@@ -1,14 +1,13 @@
-﻿using Prison.WPFApp;
-using System.Windows;
+﻿using System.Windows;
 
 namespace Prison.WpfApp
 {
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        public MainWindow(MainViewModel viewModel)
         {
             InitializeComponent();
-            DataContext = new MainViewModel();
+            DataContext = viewModel;
         }
     }
 }
