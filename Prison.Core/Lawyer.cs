@@ -15,5 +15,6 @@ namespace Prison.Core
             Energy -= 25;
             return $"{Name} holds an improvised trial in the cell.";
         }
+        private Lawyer() { }
     }
 }
