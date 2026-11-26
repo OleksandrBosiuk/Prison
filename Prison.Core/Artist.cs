@@ -25,5 +25,6 @@
             Energy -= 30;
             return string.Format(Resources.ArtistCrazy, Name);
         }
+        private Artist() { }
     }
 }

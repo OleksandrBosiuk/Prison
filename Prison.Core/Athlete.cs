@@ -15,5 +15,6 @@ namespace Prison.Core
             Energy -= 40;
             return $"{Name} starts a marathon around the cell.";
         }
+        private Athlete() { }
     }
 }

@@ -15,5 +15,6 @@
             Energy -= 25;
             return string.Format(Resources.PhilCrazy, Name);
         }
+        private Philosopher() { }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.CompilerServices;
 
 namespace Prison.Core
@@ -9,7 +10,7 @@ namespace Prison.Core
         private int _energy;
 
         public Guid Id { get; set; } = Guid.NewGuid();
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         public int Energy
         {
@@ -24,10 +25,18 @@ namespace Prison.Core
             }
         }
 
+        public string BlockName { get; set; } = "RookieBlock";
+
+        [NotMapped]
+        public BadgeCode CaseBadge => BadgeCode.FromGuid(Id);
+
+        [NotMapped]
         public string TypeName => GetType().Name;
 
         public event Action<string>? ActionLogged;
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        protected Prisoner() { }
 
         protected Prisoner(string name, int initialEnergy = 100)
         {
@@ -40,11 +49,12 @@ namespace Prison.Core
             Id = id;
             Energy = Math.Clamp(energy, 0, 100);
             OnPropertyChanged(nameof(Energy));
+            OnPropertyChanged(nameof(CaseBadge));
         }
 
         public virtual string NormalAction()
         {
-            return $"{Name} is staying in the cell and following the daily routine.";
+            return $"{Name} [{CaseBadge}] is staying in the cell and following the daily routine.";
         }
 
         public virtual string Rest()

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Prison.Core;
 using System.Windows;
 
@@ -11,17 +12,24 @@ namespace Prison.WpfApp
         public const string DefaultConnectionString =
             @"Server=(localdb)\MSSQLLocalDB;Database=PrisonBlock13Db;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;";
 
+        public const string EfCoreConnectionString =
+            @"Server=(localdb)\MSSQLLocalDB;Database=PrisonBlock13EfDb;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;";
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
             var services = new ServiceCollection();
 
+            services.AddDbContextFactory<PrisonDbContext>(options =>
+                options.UseSqlServer(EfCoreConnectionString));
+
             services.AddSingleton<JsonWorldStorage>();
             services.AddSingleton<XmlWorldStorage>();
             services.AddSingleton(_ => new SqlWorldStorage(DefaultConnectionString));
+            services.AddSingleton<EfCoreWorldStorage>();
 
-            services.AddSingleton<IWorldStorage>(sp => sp.GetRequiredService<SqlWorldStorage>());
+            services.AddSingleton<IWorldStorage>(sp => sp.GetRequiredService<EfCoreWorldStorage>());
 
             services.AddTransient<MainViewModel>();
             services.AddTransient<MainWindow>();

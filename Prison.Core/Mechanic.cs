@@ -15,5 +15,6 @@ namespace Prison.Core
             Energy -= 35;
             return $"{Name} turns the bunk into an imaginary racing car.";
         }
+        private Mechanic() { }
     }
 }

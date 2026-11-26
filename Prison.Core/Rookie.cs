@@ -15,5 +15,6 @@
             Energy -= 50;
             return string.Format(Resources.RookieCrazy, Name);
         }
+        private Rookie() { }
     }
 }

@@ -20,6 +20,17 @@ namespace Prison.WpfApp
         private readonly JsonWorldStorage _jsonStorage;
         private readonly XmlWorldStorage _xmlStorage;
         private readonly SqlWorldStorage _sqlStorage;
+        private readonly EfCoreWorldStorage _efCoreStorage;
+
+        private readonly Dictionary<string, PrisonBlockAggregate> _aggregates = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["RookieBlock"] = new PrisonBlockAggregate("RookieBlock", 5),
+            ["PhilosopherBlock"] = new PrisonBlockAggregate("PhilosopherBlock", 5),
+            ["ArtistBlock"] = new PrisonBlockAggregate("ArtistBlock", 5),
+            ["LawyerBlock"] = new PrisonBlockAggregate("LawyerBlock", 5),
+            ["AthleteBlock"] = new PrisonBlockAggregate("AthleteBlock", 5),
+            ["MechanicBlock"] = new PrisonBlockAggregate("MechanicBlock", 5)
+        };
 
         public Repository<Rookie> RookieRepo { get; } = new();
         public Repository<Philosopher> PhilosopherRepo { get; } = new();
@@ -61,7 +72,7 @@ namespace Prison.WpfApp
         }
 
         public string SelectedPrisonerText => SelectedPrisoner != null
-            ? $"{SelectedPrisoner.Name} ({SelectedPrisoner.TypeName}) [ID: {SelectedPrisoner.Id.ToString()[..8]}]"
+            ? $"{SelectedPrisoner.Name} ({SelectedPrisoner.TypeName}) | Badge: {SelectedPrisoner.CaseBadge}"
             : "Select a prisoner...";
 
         private string _searchFilter = "";
@@ -131,6 +142,7 @@ namespace Prison.WpfApp
             get => _storageStatusText;
             set { _storageStatusText = value; OnPropertyChanged(); }
         }
+
         public ICommand AddCommand { get; }
         public ICommand RemoveCommand { get; }
         public ICommand NormalActionCommand { get; }
@@ -151,17 +163,21 @@ namespace Prison.WpfApp
         public ICommand LoadXmlCommand { get; }
         public ICommand SaveDbCommand { get; }
         public ICommand LoadDbCommand { get; }
+        public ICommand SaveEfCommand { get; }
+        public ICommand LoadEfCommand { get; }
 
         public MainViewModel(
             IWorldStorage defaultDiStorage,
             JsonWorldStorage jsonStorage,
             XmlWorldStorage xmlStorage,
-            SqlWorldStorage sqlStorage)
+            SqlWorldStorage sqlStorage,
+            EfCoreWorldStorage efCoreStorage)
         {
             _defaultDiStorage = defaultDiStorage;
             _jsonStorage = jsonStorage;
             _xmlStorage = xmlStorage;
             _sqlStorage = sqlStorage;
+            _efCoreStorage = efCoreStorage;
 
             BindRepoEvents(RookieRepo);
             BindRepoEvents(PhilosopherRepo);
@@ -190,8 +206,11 @@ namespace Prison.WpfApp
             SaveXmlCommand = new RelayCommand(async _ => await SaveToFileAsync(_xmlStorage, "XML files (*.xml)|*.xml", ".xml"), _ => !IsBusy);
             LoadXmlCommand = new RelayCommand(async _ => await LoadFromFileAsync(_xmlStorage, "XML files (*.xml)|*.xml"), _ => !IsBusy);
 
-            SaveDbCommand = new RelayCommand(async _ => await SaveToDbAsync(), _ => !IsBusy);
-            LoadDbCommand = new RelayCommand(async _ => await LoadFromDbAsync(), _ => !IsBusy);
+            SaveDbCommand = new RelayCommand(async _ => await SaveToSqlAsync(_sqlStorage, App.DefaultConnectionString, "ADO.NET LocalDB"), _ => !IsBusy);
+            LoadDbCommand = new RelayCommand(async _ => await LoadFromSqlAsync(_sqlStorage, App.DefaultConnectionString, "ADO.NET LocalDB"), _ => !IsBusy);
+
+            SaveEfCommand = new RelayCommand(async _ => await SaveToSqlAsync(_efCoreStorage, App.EfCoreConnectionString, "EF Core LocalDB"), _ => !IsBusy);
+            LoadEfCommand = new RelayCommand(async _ => await LoadFromSqlAsync(_efCoreStorage, App.EfCoreConnectionString, "EF Core LocalDB"), _ => !IsBusy);
 
             ApplyLinq();
         }
@@ -217,49 +236,75 @@ namespace Prison.WpfApp
 
         private void AddPrisoner()
         {
-            AddInmateInstance(SelectedType, NewInmateName, Guid.NewGuid(), 100);
-            NewInmateName = "";
+            try
+            {
+                AddInmateInstance(SelectedType, NewInmateName, Guid.NewGuid(), 100);
+                NewInmateName = "";
+                StorageStatusText = "Prisoner admitted.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                StorageStatusText = $"Domain rule: {ex.Message}";
+                AddLog($"[Domain Rule] {ex.Message}");
+            }
+
             ApplyLinq();
             CommandManager.InvalidateRequerySuggested();
         }
 
         private void AddInmateInstance(string typeName, string name, Guid id, int energy)
         {
+            string blockName = $"{typeName}Block";
+            if (!_aggregates.ContainsKey(blockName))
+                blockName = "RookieBlock";
+
             switch (typeName)
             {
                 case "Philosopher":
                     var p = new Philosopher(name);
                     p.RestoreState(id, energy);
+                    p.BlockName = blockName;
+                    _aggregates[blockName].AdmitPrisoner(p);
                     p.ActionLogged += msg => AddLog(msg);
                     PhilosopherRepo.Add(p);
                     break;
                 case "Artist":
                     var a = new Artist(name);
                     a.RestoreState(id, energy);
+                    a.BlockName = blockName;
+                    _aggregates[blockName].AdmitPrisoner(a);
                     a.ActionLogged += msg => AddLog(msg);
                     ArtistRepo.Add(a);
                     break;
                 case "Lawyer":
                     var l = new Lawyer(name);
                     l.RestoreState(id, energy);
+                    l.BlockName = blockName;
+                    _aggregates[blockName].AdmitPrisoner(l);
                     l.ActionLogged += msg => AddLog(msg);
                     LawyerRepo.Add(l);
                     break;
                 case "Athlete":
                     var ath = new Athlete(name);
                     ath.RestoreState(id, energy);
+                    ath.BlockName = blockName;
+                    _aggregates[blockName].AdmitPrisoner(ath);
                     ath.ActionLogged += msg => AddLog(msg);
                     AthleteRepo.Add(ath);
                     break;
                 case "Mechanic":
                     var m = new Mechanic(name);
                     m.RestoreState(id, energy);
+                    m.BlockName = blockName;
+                    _aggregates[blockName].AdmitPrisoner(m);
                     m.ActionLogged += msg => AddLog(msg);
                     MechanicRepo.Add(m);
                     break;
                 default:
                     var r = new Rookie(name);
                     r.RestoreState(id, energy);
+                    r.BlockName = "RookieBlock";
+                    _aggregates["RookieBlock"].AdmitPrisoner(r);
                     r.ActionLogged += msg => AddLog(msg);
                     RookieRepo.Add(r);
                     break;
@@ -305,6 +350,10 @@ namespace Prison.WpfApp
             foreach (var item in LawyerRepo.GetAll().ToList()) LawyerRepo.Remove(item);
             foreach (var item in AthleteRepo.GetAll().ToList()) AthleteRepo.Remove(item);
             foreach (var item in MechanicRepo.GetAll().ToList()) MechanicRepo.Remove(item);
+
+            foreach (var key in _aggregates.Keys.ToList())
+                _aggregates[key] = new PrisonBlockAggregate(key, 5);
+
             SelectedPrisoner = null;
         }
 
@@ -343,7 +392,7 @@ namespace Prison.WpfApp
             {
                 var snapshot = CreateWorldSnapshot();
                 await storage.SaveAsync(snapshot, dlg.FileName);
-                StorageStatusText = $"Saved to {System.IO.Path.GetFileName(dlg.FileName)} ({storage.StorageName})";
+                StorageStatusText = $"Saved to {System.IO.Path.GetFileName(dlg.FileName)}";
                 AddLog($"[Storage] {StorageStatusText}");
             }
             catch (Exception ex)
@@ -386,21 +435,20 @@ namespace Prison.WpfApp
             }
         }
 
-        private async Task SaveToDbAsync()
+        private async Task SaveToSqlAsync(IWorldStorage storage, string connectionString, string label)
         {
             IsBusy = true;
             try
             {
                 var snapshot = CreateWorldSnapshot();
-                IWorldStorage target = _defaultDiStorage is SqlWorldStorage ? _defaultDiStorage : _sqlStorage;
-                await target.SaveAsync(snapshot, App.DefaultConnectionString);
-                StorageStatusText = "Saved to LocalDB (PrisonBlock13Db)!";
-                AddLog($"[LocalDB] {StorageStatusText}");
+                await storage.SaveAsync(snapshot, connectionString);
+                StorageStatusText = $"Saved to {label}!";
+                AddLog($"[{label}] {StorageStatusText}");
             }
             catch (Exception ex)
             {
-                StorageStatusText = $"LocalDB save error: {ex.Message}";
-                AddLog($"[LocalDB Error] {ex.Message}");
+                StorageStatusText = $"{label} save error: {ex.Message}";
+                AddLog($"[{label} Error] {ex.Message}");
             }
             finally
             {
@@ -408,21 +456,20 @@ namespace Prison.WpfApp
             }
         }
 
-        private async Task LoadFromDbAsync()
+        private async Task LoadFromSqlAsync(IWorldStorage storage, string connectionString, string label)
         {
             IsBusy = true;
             try
             {
-                IWorldStorage target = _defaultDiStorage is SqlWorldStorage ? _defaultDiStorage : _sqlStorage;
-                var loadedWorld = await target.LoadAsync(App.DefaultConnectionString);
+                var loadedWorld = await storage.LoadAsync(connectionString);
                 RestoreWorldFromDto(loadedWorld);
-                StorageStatusText = "Loaded from LocalDB (PrisonBlock13Db)!";
-                AddLog($"[LocalDB] World restored from LocalDB.");
+                StorageStatusText = $"Loaded from {label}!";
+                AddLog($"[{label}] World restored.");
             }
             catch (Exception ex)
             {
-                StorageStatusText = $"LocalDB load error: {ex.Message}";
-                AddLog($"[LocalDB Error] {ex.Message}");
+                StorageStatusText = $"{label} load error: {ex.Message}";
+                AddLog($"[{label} Error] {ex.Message}");
             }
             finally
             {
@@ -433,6 +480,9 @@ namespace Prison.WpfApp
         private void RemovePrisoner()
         {
             if (SelectedPrisoner == null) return;
+
+            if (_aggregates.TryGetValue(SelectedPrisoner.BlockName, out var agg))
+                agg.ReleasePrisoner(SelectedPrisoner.Id);
 
             if (SelectedPrisoner is Rookie r) RookieRepo.Remove(r);
             else if (SelectedPrisoner is Philosopher ph) PhilosopherRepo.Remove(ph);
@@ -509,7 +559,7 @@ namespace Prison.WpfApp
                 SelectedPrisoner = currentSelected;
 
             var groups = all.GroupBy(x => x.TypeName)
-                            .Select(g => $"{g.Key}: {g.Count()} (Avg: {(g.Any() ? (int)g.Average(i => i.Energy) : 0)}%)");
+                            .Select(g => $"{g.Key}: {g.Count()}/5 (Avg: {(g.Any() ? (int)g.Average(i => i.Energy) : 0)}%)");
 
             GroupSummaryText = all.Any()
                 ? "Summary: " + string.Join(" | ", groups)
